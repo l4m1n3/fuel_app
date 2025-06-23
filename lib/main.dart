@@ -51,15 +51,17 @@ class MyApp extends StatelessWidget {
           bodyLarge: TextStyle(color: Color(0xFF4B5EAA)), // Gris anthracite
         ),
       ),
-      initialRoute: '/login',
+      initialRoute: '/dashboard',
       routes: {
         '/login': (context) => LoginScreen(),
-          '/register': (context) => RegisterScreen(),
+        '/register': (context) => RegisterScreen(),
         '/dashboard': (context) => DashboardScreen(),
         '/history': (context) => HistoryScreen(),
         '/map': (context) => MapScreen(),
         '/transaction_detail': (context) => TransactionDetailScreen(),
         '/profile': (context) => ProfileScreen(),
+        '/qr_scanner': (context) => const QRScannerScreen(),
+        // '/pay':(context)=>
       },
     );
   }
