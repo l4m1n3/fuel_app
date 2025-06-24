@@ -1,4 +1,3 @@
-// TODO Implement this library.
 class FuelCard {
   final int id;
   final String cardNumber;

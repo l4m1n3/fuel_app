@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_card_app/main.dart';
+import 'package:fuel_card_app/data/database_helper.dart';
 import 'package:provider/provider.dart';
-import '../data/static_data.dart';
+import 'package:animate_do/animate_do.dart';
+// import '../database_helper.dart';
 import '../models/transaction.dart';
 import '../widgets/custom_card.dart';
-import 'package:animate_do/animate_do.dart'; // For animations
+import '../main.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -16,33 +17,55 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   String selectedFilter = 'all';
   String selectedFuelType = 'all';
+  List<Transaction> transactions = [];
 
-  List<Transaction> getFilteredTransactions(int selectedCardId) {
-    var transactions = StaticData.transactions
-        .where((t) => t.fuelCardId == selectedCardId)
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
 
+  Future<void> _loadTransactions() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final dbHelper = DatabaseHelper.instance;
+    final cardId = appState.selectedCardId ?? 1; // Fallback si null
+    final allTransactions = await dbHelper.getTransactions(cardId);
+    setState(() {
+      transactions = _filterTransactions(allTransactions);
+    });
+  }
+
+  List<Transaction> _filterTransactions(List<Transaction> transactions) {
+    var filtered = transactions;
+
+    // Filtrage par période
+    final now = DateTime.now();
     if (selectedFilter == 'month') {
-      transactions =
-          transactions.where((t) => t.date.contains('05/2025')).toList();
+      filtered = filtered.where((t) {
+        final date = DateTime.parse(t.date);
+        return date.year == now.year && date.month == now.month;
+      }).toList();
     } else if (selectedFilter == 'quarter') {
-      transactions =
-          transactions.where((t) => t.date.contains('2025')).toList();
+      filtered = filtered.where((t) {
+        final date = DateTime.parse(t.date);
+        final currentQuarter = (now.month - 1) ~/ 3 + 1;
+        final transactionQuarter = (date.month - 1) ~/ 3 + 1;
+        return date.year == now.year && transactionQuarter == currentQuarter;
+      }).toList();
     }
 
+    // Filtrage par type de carburant
     if (selectedFuelType != 'all') {
-      transactions =
-          transactions.where((t) => t.fuelType == selectedFuelType).toList();
+      filtered = filtered.where((t) => t.fuelType == selectedFuelType).toList();
     }
 
-    return transactions;
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final appState = Provider.of<AppState>(context);
-    final transactions = getFilteredTransactions(appState.selectedCardId);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -72,12 +95,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           builder: (context, constraints) {
             return Column(
               children: [
-                // Summary Header
                 FadeInDown(
                   duration: const Duration(milliseconds: 300),
                   child: _buildSummaryHeader(context, transactions),
                 ),
-                // Transactions List
                 Expanded(
                   child: transactions.isEmpty
                       ? _buildEmptyState(context)
@@ -109,7 +130,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildSummaryHeader(
       BuildContext context, List<Transaction> transactions) {
     final theme = Theme.of(context);
-    final total = transactions.fold(0.0, (sum, t) => sum + t.amount);
+    final total = transactions.fold(0.0, (sum, t) => sum + t.amount.abs());
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -187,7 +208,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Icon
               Container(
                 width: 48,
                 height: 48,
@@ -205,7 +225,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Transaction Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +240,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Row(
                       children: [
                         Text(
-                          transaction.date,
+                          DateTime.parse(transaction.date)
+                              .toLocal()
+                              .toString()
+                              .substring(0, 16),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -235,7 +257,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            transaction.fuelType,
+                            transaction.fuelType ?? 'Inconnu',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w500,
@@ -247,12 +269,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                 ),
               ),
-              // Amount and Chevron
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${transaction.amount} XOF',
+                    '${transaction.amount.abs()} XOF',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isRefill ? Colors.green : theme.colorScheme.error,
@@ -302,6 +323,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onPressed: () => setState(() {
               selectedFilter = 'all';
               selectedFuelType = 'all';
+              _loadTransactions();
             }),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -321,7 +343,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return NavigationBar(
       selectedIndex: 1,
       onDestinationSelected: (index) {
-        if (index == 0) Navigator.pushNamed(context, '/dashboard');
+        if (index == 0) Navigator.pushNamed(context, '/');
         if (index == 2) Navigator.pushNamed(context, '/map');
         if (index == 3) Navigator.pushNamed(context, '/profile');
       },
@@ -402,6 +424,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     setState(() {
                       selectedFilter = tempFilter;
                       selectedFuelType = tempFuelType;
+                      _loadTransactions();
                     });
                     Navigator.pop(context);
                   },
@@ -450,8 +473,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             groupValue: selectedValue,
             onChanged: (value) {
               onChanged(value!);
-              // Haptic feedback (add `flutter_haptic` package if desired)
-              // HapticFeedback.lightImpact();
             },
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
@@ -480,7 +501,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  Color _getFuelTypeColor(String type) {
+  Color _getFuelTypeColor(String? type) {
     switch (type) {
       case 'Essence':
         return Colors.orange.shade600;

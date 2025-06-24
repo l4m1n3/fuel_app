@@ -1,7 +1,7 @@
 // import 'package:flutter/material.dart';
 // import 'package:fuel_card_app/main.dart';
 // import 'package:provider/provider.dart';
-// import 'package:qr_code_scanner/qr_code_scanner.dart';
+// import 'package:mobile_scanner/mobile_scanner.dart';
 // import '../data/static_data.dart';
 // import '../models/fuel_card.dart';
 // import '../models/transaction.dart';
@@ -60,23 +60,23 @@
 //               const SizedBox(height: 24),
 //               _buildBalanceCard(context, theme, colors, selectedCard),
 //               const SizedBox(height: 24),
-//               _buildQuickActions(context, theme),
+//               _buildQuickActions(context, theme, recentTransactions),
 //               const SizedBox(height: 32),
 //               _buildTransactionsSection(context, theme, recentTransactions),
 //             ],
 //           ),
 //         ),
 //       ),
-//       bottomNavigationBar: _buildBottomNavBar( context, 0),
+//       bottomNavigationBar: _buildBottomNavBar(context, 0),
 //     );
 //   }
 
 //   Widget _buildCardSelector(BuildContext context, AppState appState,
 //       ThemeData theme, FuelCard selectedCard) {
 //     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 16),
+//       padding: const EdgeInsets.symmetric(horizontal: 12),
 //       decoration: BoxDecoration(
-//         color: Colors.white,
+//         color: theme.cardColor,
 //         border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
 //         borderRadius: BorderRadius.circular(12),
 //         boxShadow: [
@@ -163,7 +163,7 @@
 //           const SizedBox(height: 16),
 //           LinearProgressIndicator(
 //             value: card.balance / 100000,
-//             backgroundColor: colors.surfaceVariant,
+//             backgroundColor: colors.surfaceContainerHighest,
 //             color: theme.primaryColor,
 //             minHeight: 6,
 //             borderRadius: BorderRadius.circular(3),
@@ -191,7 +191,8 @@
 //     );
 //   }
 
-//   Widget _buildQuickActions(BuildContext context, ThemeData theme) {
+//   Widget _buildQuickActions(
+//       BuildContext context, ThemeData theme, List<Transaction> recentTransactions) {
 //     return Column(
 //       children: [
 //         Text(
@@ -205,9 +206,23 @@
 //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
 //           children: [
 //             _buildActionButton(context, Icons.add, 'Recharger', '/topup'),
-//             _buildActionButton(context, Icons.swap_horiz, 'Transférer', null, onTap: () => _showTransferBottomSheet(context)),
+//             _buildActionButton(context, Icons.swap_horiz, 'Transférer', null,
+//                 onTap: () => _showTransferBottomSheet(context)),
 //             _buildActionButton(context, Icons.qr_code, 'Payer', '/qr_scanner'),
-//             _buildActionButton(context, Icons.receipt, 'Factures', '/invoices'),
+//             _buildActionButton(context, Icons.receipt, 'Factures', null, onTap: () {
+//               if (recentTransactions.isEmpty) {
+//                 ScaffoldMessenger.of(context).showSnackBar(
+//                   const SnackBar(
+//                       content: Text('Aucune transaction disponible pour générer un PDF')),
+//                 );
+//                 return;
+//               }
+//               Navigator.pushNamed(
+//                 context,
+//                 '/transaction_detail',
+//                 arguments: recentTransactions.first,
+//               );
+//             }),
 //           ],
 //         ),
 //       ],
@@ -215,7 +230,8 @@
 //   }
 
 //   Widget _buildActionButton(
-//       BuildContext context, IconData icon, String label, String? route, {VoidCallback? onTap}) {
+//       BuildContext context, IconData icon, String label, String? route,
+//       {VoidCallback? onTap}) {
 //     final theme = Theme.of(context);
 //     return GestureDetector(
 //       onTap: onTap ?? (route != null ? () => Navigator.pushNamed(context, route) : null),
@@ -246,16 +262,11 @@
 //     );
 //   }
 
-//   // Displays a bottom sheet with a form to initiate a transfer
 //   void _showTransferBottomSheet(BuildContext context) {
 //     final theme = Theme.of(context);
-//     // Form key for validation
 //     final formKey = GlobalKey<FormState>();
-//     // Controller for the amount input field
 //     final amountController = TextEditingController();
-//     // Access AppState to get the selected card ID
 //     final appState = Provider.of<AppState>(context, listen: false);
-//     // Retrieve the currently selected card from StaticData
 //     final selectedCard = StaticData.fuelCards.firstWhere(
 //       (card) => card.id == appState.selectedCardId,
 //       orElse: () => StaticData.fuelCards[0],
@@ -263,7 +274,6 @@
 
 //     showModalBottomSheet(
 //       context: context,
-//       // Allows the bottom sheet to adjust for keyboard
 //       isScrollControlled: true,
 //       shape: const RoundedRectangleBorder(
 //         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -289,7 +299,6 @@
 //                   ),
 //                 ),
 //                 const SizedBox(height: 16),
-//                 // Input field for the transfer amount
 //                 TextFormField(
 //                   controller: amountController,
 //                   decoration: InputDecoration(
@@ -307,7 +316,6 @@
 //                     if (amount == null || amount <= 0) {
 //                       return 'Veuillez entrer un montant valide';
 //                     }
-//                     // Check if the amount exceeds the card's balance
 //                     if (amount > selectedCard.balance) {
 //                       return 'Montant supérieur au solde disponible (${selectedCard.balance.toStringAsFixed(0)} XOF)';
 //                     }
@@ -319,10 +327,8 @@
 //                   width: double.infinity,
 //                   child: ElevatedButton(
 //                     onPressed: () {
-//                       // Validate the form
 //                       if (formKey.currentState!.validate()) {
 //                         final amount = double.parse(amountController.text);
-//                         // Update the card balance in StaticData
 //                         final cardIndex = StaticData.fuelCards.indexWhere(
 //                             (card) => card.id == selectedCard.id);
 //                         if (cardIndex != -1) {
@@ -332,14 +338,11 @@
 //                             balance: selectedCard.balance - amount,
 //                             userId: selectedCard.userId,
 //                           );
-//                           // Notify listeners to refresh the UI
 //                           appState.notifyListeners();
 //                         }
-//                         // Show confirmation message
 //                         ScaffoldMessenger.of(context).showSnackBar(
 //                           SnackBar(content: Text('Transfert de $amount XOF effectué avec succès')),
 //                         );
-//                         // Close the bottom sheet
 //                         Navigator.pop(context);
 //                       }
 //                     },
@@ -479,7 +482,7 @@
 //     return Container(
 //       padding: const EdgeInsets.symmetric(vertical: 40),
 //       decoration: BoxDecoration(
-//         color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+//         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
 //         borderRadius: BorderRadius.circular(12),
 //       ),
 //       child: Column(
@@ -548,13 +551,13 @@
 // }
 
 // class _QRScannerScreenState extends State<QRScannerScreen> {
-//   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-//   QRViewController? controller;
+//   final MobileScannerController controller = MobileScannerController();
 //   bool isScanning = true;
+//   bool isFlashOn = false;
 
 //   @override
 //   void dispose() {
-//     controller?.dispose();
+//     controller.dispose();
 //     super.dispose();
 //   }
 
@@ -569,17 +572,27 @@
 //       ),
 //       body: Stack(
 //         children: [
-//           QRView(
-//             key: qrKey,
-//             onQRViewCreated: _onQRViewCreated,
-//             overlay: QrScannerOverlayShape(
-//               borderColor: theme.primaryColor,
-//               borderRadius: 10,
-//               borderLength: 30,
-//               borderWidth: 10,
-//               cutOutSize: 250,
+//           MobileScanner(
+//             controller: controller,
+//             onDetect: (capture) {
+//               if (isScanning) {
+//                 final List<Barcode> barcodes = capture.barcodes;
+//                 if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+//                   setState(() {
+//                     isScanning = false;
+//                   });
+//                   _handleScannedData(context, barcodes.first.rawValue!);
+//                 }
+//               }
+//             },
+//             scanWindow: Rect.fromCenter(
+//               center: MediaQuery.of(context).size.center(Offset.zero),
+//               width: 250,
+//               height: 250,
 //             ),
 //           ),
+//           // Superposition personnalisée pour le cadre de scan
+//           _buildScanOverlay(context, theme),
 //           Positioned(
 //             bottom: 20,
 //             left: 0,
@@ -588,11 +601,11 @@
 //               child: ElevatedButton(
 //                 onPressed: () {
 //                   setState(() {
-//                     isScanning = !isScanning;
-//                     controller?.toggleFlash();
+//                     isFlashOn = !isFlashOn;
 //                   });
+//                   controller.toggleTorch();
 //                 },
-//                 child: Text(isScanning ? 'Désactiver Flash' : 'Activer Flash'),
+//                 child: Text(isFlashOn ? 'Désactiver Flash' : 'Activer Flash'),
 //               ),
 //             ),
 //           ),
@@ -601,43 +614,164 @@
 //     );
 //   }
 
-//   void _onQRViewCreated(QRViewController controller) {
-//     setState(() {
-//       this.controller = controller;
-//     });
-//     controller.scannedDataStream.listen((scanData) {
-//       if (isScanning) {
-//         setState(() {
-//           isScanning = false;
-//         });
-//         controller.pauseCamera();
-//         _handleScannedData(context, scanData.code);
-//       }
-//     });
+//   Widget _buildScanOverlay(BuildContext context, ThemeData theme) {
+//     final size = MediaQuery.of(context).size;
+//     const scanWindowSize = 250.0;
+//     final scanWindow = Rect.fromCenter(
+//       center: size.center(Offset.zero),
+//       width: scanWindowSize,
+//       height: scanWindowSize,
+//     );
+
+//     return Stack(
+//       children: [
+//         // Superposition sombre à l'extérieur de la fenêtre de scan
+//         Container(
+//           color: Colors.black.withOpacity(0.5),
+//         ),
+//         // Fenêtre de scan transparente
+//         Positioned.fromRect(
+//           rect: scanWindow,
+//           child: Container(
+//             decoration: BoxDecoration(
+//               border: Border.all(
+//                 color: theme.primaryColor,
+//                 width: 10,
+//               ),
+//               borderRadius: BorderRadius.circular(10),
+//             ),
+//           ),
+//         ),
+//         // Coins de la fenêtre de scan
+//         _buildCorner(scanWindow.left, scanWindow.top, theme, isTopLeft: true),
+//         _buildCorner(scanWindow.right, scanWindow.top, theme, isTopRight: true),
+//         _buildCorner(scanWindow.left, scanWindow.bottom, theme, isBottomLeft: true),
+//         _buildCorner(scanWindow.right, scanWindow.bottom, theme, isBottomRight: true),
+//       ],
+//     );
 //   }
 
-//   void _handleScannedData(BuildContext context, String? code) {
-//     if (code != null) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Code QR scanné : $code')),
-//       );
-//       Future.delayed(const Duration(seconds: 2), () {
-//         Navigator.pop(context);
-//       });
-//     }
+//   Widget _buildCorner(double x, double y, ThemeData theme,
+//       {bool isTopLeft = false,
+//       bool isTopRight = false,
+//       bool isBottomLeft = false,
+//       bool isBottomRight = false}) {
+//     const cornerLength = 30.0;
+//     const cornerWidth = 10.0;
+
+//     return Positioned(
+//       left: isTopRight || isBottomRight ? x - cornerWidth : x,
+//       top: isBottomLeft || isBottomRight ? y - cornerWidth : y,
+//       child: CustomPaint(
+//         size: const Size(cornerLength, cornerLength),
+//         painter: _CornerPainter(
+//           color: theme.primaryColor,
+//           isTopLeft: isTopLeft,
+//           isTopRight: isTopRight,
+//           isBottomLeft: isBottomLeft,
+//           isBottomRight: isBottomRight,
+//         ),
+//       ),
+//     );
+//   }
+
+//   void _handleScannedData(BuildContext context, String code) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text('Code QR scanné : $code')),
+//     );
+//     Future.delayed(const Duration(seconds: 2), () {
+//       Navigator.pop(context);
+//     });
 //   }
 // }
+
+// class _CornerPainter extends CustomPainter {
+//   final Color color;
+//   final bool isTopLeft;
+//   final bool isTopRight;
+//   final bool isBottomLeft;
+//   final bool isBottomRight;
+
+//   _CornerPainter({
+//     required this.color,
+//     this.isTopLeft = false,
+//     this.isTopRight = false,
+//     this.isBottomLeft = false,
+//     this.isBottomRight = false,
+//   });
+
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final paint = Paint()
+//       ..color = color
+//       ..strokeWidth = 10
+//       ..style = PaintingStyle.stroke;
+
+//     final path = Path();
+
+//     if (isTopLeft) {
+//       path.moveTo(0, size.height / 2);
+//       path.lineTo(0, 0);
+//       path.lineTo(size.width / 2, 0);
+//     } else if (isTopRight) {
+//       path.moveTo(size.width / 2, 0);
+//       path.lineTo(size.width, 0);
+//       path.lineTo(size.width, size.height / 2);
+//     } else if (isBottomLeft) {
+//       path.moveTo(0, size.height / 2);
+//       path.lineTo(0, size.height);
+//       path.lineTo(size.width / 2, size.height);
+//     } else if (isBottomRight) {
+//       path.moveTo(size.width / 2, size.height);
+//       path.lineTo(size.width, size.height);
+//       path.lineTo(size.width, size.height / 2);
+//     }
+
+//     canvas.drawPath(path, paint);
+//   }
+
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+// }
 import 'package:flutter/material.dart';
-import 'package:fuel_card_app/main.dart';
+import 'package:fuel_card_app/data/database_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../data/static_data.dart';
+// import '../database_helper.dart';
 import '../models/fuel_card.dart';
 import '../models/transaction.dart';
 import '../widgets/custom_card.dart';
+import '../main.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  List<FuelCard> fuelCards = [];
+  List<Transaction> recentTransactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final dbHelper = DatabaseHelper.instance;
+    final cards = await dbHelper.getFuelCards();
+    final appState = Provider.of<AppState>(context, listen: false);
+    final selectedCardId = appState.selectedCardId ?? cards[0].id;
+
+    final transactions = await dbHelper.getTransactions(selectedCardId);
+    setState(() {
+      fuelCards = cards;
+      recentTransactions = transactions.take(3).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -645,15 +779,16 @@ class DashboardScreen extends StatelessWidget {
     final colors = theme.colorScheme;
     final appState = Provider.of<AppState>(context);
 
-    final selectedCard = StaticData.fuelCards.firstWhere(
-      (card) => card.id == appState.selectedCardId,
-      orElse: () => StaticData.fuelCards[0],
-    );
+    if (fuelCards.isEmpty) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-    final recentTransactions = StaticData.transactions
-        .where((t) => t.fuelCardId == selectedCard.id)
-        .take(3)
-        .toList();
+    final selectedCard = fuelCards.firstWhere(
+      (card) => card.id == appState.selectedCardId,
+      orElse: () => fuelCards[0],
+    );
 
     return Scaffold(
       backgroundColor: theme.colorScheme.onPrimary,
@@ -675,9 +810,7 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.delayed(const Duration(seconds: 1));
-        },
+        onRefresh: _loadData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -700,8 +833,8 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCardSelector(BuildContext context, AppState appState,
-      ThemeData theme, FuelCard selectedCard) {
+  Widget _buildCardSelector(
+      BuildContext context, AppState appState, ThemeData theme, FuelCard selectedCard) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -723,7 +856,7 @@ class DashboardScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_drop_down),
           style: theme.textTheme.titleMedium,
           dropdownColor: theme.cardColor,
-          items: StaticData.fuelCards.map((FuelCard card) {
+          items: fuelCards.map((FuelCard card) {
             return DropdownMenuItem<int>(
               value: card.id,
               child: Row(
@@ -738,8 +871,7 @@ class DashboardScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(left: 8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: theme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -756,14 +888,20 @@ class DashboardScreen extends StatelessWidget {
               ),
             );
           }).toList(),
-          onChanged: (value) => appState.setSelectedCard(value!),
+          onChanged: (value) async {
+            appState.setSelectedCard(value!);
+            final transactions = await DatabaseHelper.instance.getTransactions(value);
+            setState(() {
+              recentTransactions = transactions.take(3).toList();
+            });
+          },
         ),
       ),
     );
   }
 
-  Widget _buildBalanceCard(BuildContext context, ThemeData theme,
-      ColorScheme colors, FuelCard card) {
+  Widget _buildBalanceCard(
+      BuildContext context, ThemeData theme, ColorScheme colors, FuelCard card) {
     return CustomCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -896,9 +1034,9 @@ class DashboardScreen extends StatelessWidget {
     final formKey = GlobalKey<FormState>();
     final amountController = TextEditingController();
     final appState = Provider.of<AppState>(context, listen: false);
-    final selectedCard = StaticData.fuelCards.firstWhere(
+    final selectedCard = fuelCards.firstWhere(
       (card) => card.id == appState.selectedCardId,
-      orElse: () => StaticData.fuelCards[0],
+      orElse: () => fuelCards[0],
     );
 
     showModalBottomSheet(
@@ -955,20 +1093,29 @@ class DashboardScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (formKey.currentState!.validate()) {
                         final amount = double.parse(amountController.text);
-                        final cardIndex = StaticData.fuelCards.indexWhere(
-                            (card) => card.id == selectedCard.id);
-                        if (cardIndex != -1) {
-                          StaticData.fuelCards[cardIndex] = FuelCard(
-                            id: selectedCard.id,
-                            cardNumber: selectedCard.cardNumber,
-                            balance: selectedCard.balance - amount,
-                            userId: selectedCard.userId,
-                          );
-                          appState.notifyListeners();
-                        }
+                        final updatedCard = FuelCard(
+                          id: selectedCard.id,
+                          cardNumber: selectedCard.cardNumber,
+                          balance: selectedCard.balance - amount,
+                          userId: selectedCard.userId,
+                        );
+
+                        await DatabaseHelper.instance.updateFuelCard(updatedCard);
+                        await DatabaseHelper.instance.insertTransaction(Transaction(
+                          id: 0,
+                          fuelCardId: selectedCard.id,
+                          stationName: 'Transfert',
+                          amount: -amount,
+                          date: DateTime.now().toIso8601String(),
+                          status: 'Terminé', fuelType: '',
+                        ));
+
+                        await _loadData();
+                        appState.notifyListeners();
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Transfert de $amount XOF effectué avec succès')),
                         );
@@ -1220,7 +1367,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               height: 250,
             ),
           ),
-          // Superposition personnalisée pour le cadre de scan
           _buildScanOverlay(context, theme),
           Positioned(
             bottom: 20,
@@ -1254,111 +1400,96 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
     return Stack(
       children: [
-        // Superposition sombre à l'extérieur de la fenêtre de scan
         Container(
           color: Colors.black.withOpacity(0.5),
         ),
-        // Fenêtre de scan transparente
         Positioned.fromRect(
           rect: scanWindow,
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
                 color: theme.primaryColor,
-                width: 10,
+                width: 2,
               ),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
         ),
-        // Coins de la fenêtre de scan
-        _buildCorner(scanWindow.left, scanWindow.top, theme, isTopLeft: true),
-        _buildCorner(scanWindow.right, scanWindow.top, theme, isTopRight: true),
-        _buildCorner(scanWindow.left, scanWindow.bottom, theme, isBottomLeft: true),
-        _buildCorner(scanWindow.right, scanWindow.bottom, theme, isBottomRight: true),
+        _buildCorner(scanWindow.left, scanWindow.top, scanWindowSize, theme, isTopLeft: true),
+        _buildCorner(scanWindow.right, scanWindow.top, scanWindowSize, theme, isRight: true),
+        _buildCorner(scanWindow.left, scanWindow.bottom, scanWindowSize, theme, isBottomLeft: true),
+        _buildCorner(scanWindow.right, scanWindow.bottom, scanWindowSize, theme, isBottomRight: true),
       ],
     );
   }
 
-  Widget _buildCorner(double x, double y, ThemeData theme,
-      {bool isTopLeft = false,
-      bool isTopRight = false,
-      bool isBottomLeft = false,
-      bool isBottomRight = false}) {
-    const cornerLength = 30.0;
-    const cornerWidth = 10.0;
-
+  Widget _buildCorner(double x, double y, double size, ThemeData theme,
+      {bool isTopLeft = false, bool isRight = false, bool isBottomLeft = false, bool isBottomRight = false}) {
+    const cornerLength = 20.0;
     return Positioned(
-      left: isTopRight || isBottomRight ? x - cornerWidth : x,
-      top: isBottomLeft || isBottomRight ? y - cornerWidth : y,
-      child: CustomPaint(
-        size: const Size(cornerLength, cornerLength),
-        painter: _CornerPainter(
-          color: theme.primaryColor,
-          isTopLeft: isTopLeft,
-          isTopRight: isTopRight,
-          isBottomLeft: isBottomLeft,
-          isBottomRight: isBottomRight,
+      left: isRight || isBottomRight ? x - cornerLength : x,
+      top: isBottomLeft || isBottomRight ? y - cornerLength : y,
+      child: Container(
+        width: cornerLength,
+        height: cornerLength,
+        decoration: BoxDecoration(
+          border: Border(
+            top: isTopLeft || isRight
+                ? BorderSide(color: theme.primaryColor, width: 3)
+                : BorderSide.none,
+            left: isTopLeft || isBottomLeft
+                ? BorderSide(color: theme.primaryColor, width: 3)
+                : BorderSide.none,
+            right: isRight || isBottomRight
+                ? BorderSide(color: theme.primaryColor, width: 3)
+                : BorderSide.none,
+            bottom: isBottomLeft || isBottomRight
+                ? BorderSide(color: theme.primaryColor, width: 3)
+                : BorderSide.none,
+          ),
         ),
       ),
     );
   }
 
-  void _handleScannedData(BuildContext context, String code) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Code QR scanné : $code')),
-    );
+  void _handleScannedData(BuildContext context, String code) async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final selectedCard = (await DatabaseHelper.instance.getFuelCards())
+        .firstWhere((card) => card.id == appState.selectedCardId);
+
+    const amount = 10000.0;
+    if (selectedCard.balance >= amount) {
+      final updatedCard = FuelCard(
+        id: selectedCard.id,
+        cardNumber: selectedCard.cardNumber,
+        balance: selectedCard.balance - amount,
+        userId: selectedCard.userId,
+      );
+
+      await DatabaseHelper.instance.updateFuelCard(updatedCard);
+      await DatabaseHelper.instance.insertTransaction(Transaction(
+        id: 0,
+        fuelCardId: selectedCard.id,
+        stationName: 'Station QR',
+        amount: -amount,
+        date: DateTime.now().toIso8601String(),
+        status: 'Terminé', fuelType: '',  // Assuming fuelType is a String
+      ));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Paiement de $amount XOF via QR code : $code')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solde insuffisant')),
+      );
+    }
+
     Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        isScanning = true;
+      });
       Navigator.pop(context);
     });
   }
-}
-
-class _CornerPainter extends CustomPainter {
-  final Color color;
-  final bool isTopLeft;
-  final bool isTopRight;
-  final bool isBottomLeft;
-  final bool isBottomRight;
-
-  _CornerPainter({
-    required this.color,
-    this.isTopLeft = false,
-    this.isTopRight = false,
-    this.isBottomLeft = false,
-    this.isBottomRight = false,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 10
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-
-    if (isTopLeft) {
-      path.moveTo(0, size.height / 2);
-      path.lineTo(0, 0);
-      path.lineTo(size.width / 2, 0);
-    } else if (isTopRight) {
-      path.moveTo(size.width / 2, 0);
-      path.lineTo(size.width, 0);
-      path.lineTo(size.width, size.height / 2);
-    } else if (isBottomLeft) {
-      path.moveTo(0, size.height / 2);
-      path.lineTo(0, size.height);
-      path.lineTo(size.width / 2, size.height);
-    } else if (isBottomRight) {
-      path.moveTo(size.width / 2, size.height);
-      path.lineTo(size.width, size.height);
-      path.lineTo(size.width, size.height / 2);
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

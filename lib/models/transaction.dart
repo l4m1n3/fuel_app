@@ -1,12 +1,11 @@
-// TODO Implement this library.
 class Transaction {
   final int id;
   final int fuelCardId;
   final String stationName;
   final double amount;
   final String date;
-  final String fuelType;
   final String? status;
+  final String? fuelType;
 
   Transaction({
     required this.id,
@@ -14,7 +13,7 @@ class Transaction {
     required this.stationName,
     required this.amount,
     required this.date,
-    required this.fuelType,
     this.status,
+    this.fuelType,
   });
 }
