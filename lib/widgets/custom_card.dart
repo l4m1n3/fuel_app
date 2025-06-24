@@ -31,7 +31,7 @@ class CustomCard extends StatelessWidget {
   final double borderRadius;
 
   const CustomCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16.0),
     this.color = const Color(0xFFF5F5DC), // Beige désert par défaut
@@ -39,7 +39,7 @@ class CustomCard extends StatelessWidget {
     this.hasBorder = false,
     this.borderColor = Colors.brown, // Couleur bordure désert
     this.borderRadius = 12.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

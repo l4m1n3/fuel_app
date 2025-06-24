@@ -9,7 +9,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -30,9 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   bool _validateInputs() {
-    if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+    if (_phoneController.text.isEmpty || !_phoneController.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer une adresse email valide')),
+        const SnackBar(content: Text('Veuillez entrer votre numero de telephone')),
       );
       return false;
     }
@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -108,10 +108,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Champ Email
                 TextFormField(
-                  controller: _emailController,
+                  controller: _phoneController,
                   decoration: InputDecoration(
-                    labelText: 'Adresse email',
-                    hintText: 'exemple@email.com',
+                    labelText: 'Numéro de téléphone',
+                    hintText: '+227 96 12 34 56',
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                   validator: (value) {
                     if (value == null || value.isEmpty || !value.contains('@')) {
-                      return 'Email invalide';
+                      return 'numero invalide';
                     }
                     return null;
                   },

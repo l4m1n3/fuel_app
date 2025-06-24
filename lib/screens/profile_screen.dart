@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
 import '../data/static_data.dart';
-import '../models/fuel_card.dart';
 import '../widgets/custom_card.dart';
 import 'package:animate_do/animate_do.dart'; // For animations
 

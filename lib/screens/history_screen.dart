@@ -458,7 +458,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             dense: true,
             activeColor: theme.colorScheme.primary,
           );
-        }).toList(),
+        }),
       ],
     );
   }
